@@ -60,7 +60,6 @@ def predict_absences(data: AbsencePredictionRequest = None):
 
 @app.post("/retrain")
 def retrain_model(retraining_data: AbsenceRetrainingRequest):
-    model_file_name = "absences_sgdc_pipe.pkl"
     pipe = pickle.load(open(MODEL_PATH, "rb"))
 
     print(retraining_data.model_dump())
@@ -82,8 +81,8 @@ def retrain_model(retraining_data: AbsenceRetrainingRequest):
     # update the pipeline with the retrained classifier
     pipe.named_steps["classifier"] = classifier
 
-    print(f"Model retrained successfully, saving to file [{model_file_name}]...")
-    with open(model_file_name, "wb") as f:
+    print(f"Model retrained successfully, saving to file [{MODEL_PATH}]...")
+    with open(MODEL_PATH, "wb") as f:
         pickle.dump(pipe, f)
 
     return MessageResponse(message="Model retrained successfully")
