@@ -2,8 +2,12 @@ import pickle
 import pandas as pd
 from fastapi import FastAPI
 from pydantic import BaseModel
+import uvicorn
+from pathlib import Path
 
 app = FastAPI()
+PIPELINE_MODELS_PATH = Path("pipeline-models")
+MODEL_PATH = PIPELINE_MODELS_PATH / "absences_sgdc_pipe.pkl"
 
 @app.get("/")
 def read_root():
@@ -46,7 +50,7 @@ class MessageResponse(BaseModel):
 
 @app.post("/predict-absences")
 def predict_absences(data: AbsencePredictionRequest = None):
-    pipe = pickle.load(open("absences_sgdc_pipe.pkl", "rb"))
+    pipe = pickle.load(open(MODEL_PATH, "rb"))
     input_df = pd.DataFrame([data.model_dump()])
     print("Input DataFrame for prediction:", input_df.columns.tolist())
     prediction = pipe.predict_proba(input_df)[0][1]  # get the probability of absence
@@ -57,7 +61,7 @@ def predict_absences(data: AbsencePredictionRequest = None):
 @app.post("/retrain")
 def retrain_model(retraining_data: AbsenceRetrainingRequest):
     model_file_name = "absences_sgdc_pipe.pkl"
-    pipe = pickle.load(open(model_file_name, "rb"))
+    pipe = pickle.load(open(MODEL_PATH, "rb"))
 
     print(retraining_data.model_dump())
     X = pd.DataFrame([retraining_data.model_dump()]).drop(columns=["IsAbsent"])
@@ -83,3 +87,11 @@ def retrain_model(retraining_data: AbsenceRetrainingRequest):
         pickle.dump(pipe, f)
 
     return MessageResponse(message="Model retrained successfully")
+
+if __name__ == "__main__":
+    uvicorn.run(
+        "absences-api:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True
+    )
